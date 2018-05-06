@@ -58,25 +58,24 @@ class ZhiLian(object):
                     'adress': adress}
                 datas.append(data)
             return datas
-        except Exception:
+        except Exception as e:
+            print('异常:{}'.format(e))
             return []
 
     def get_all_job(self):
         content = []
         url = 'http://sou.zhaopin.com/jobs/searchresult.ashx'
-        for page_num in range(1, int(self.total_page)):
+        for page_num in range(1, int(self.total_page)+1):
             form_data = {
                 'jl': self.city,
                 'kw': self.job,
                 'p': str(page_num)}
             while True:
-                print(form_data)
                 source = self.get_one_page('get', url, data=form_data)
-
                 if source is not None:
-                    print(source)
                     datas = self.parse_one_page(source)
                     if len(datas) != 0:
+                        print(form_data)
                         for data in self.parse_one_page(source):
                             content.append(data)
                         break
@@ -138,11 +137,12 @@ class LaGou(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/66.0.3359.139 Safari/537.36'
         }
-        for page in range(1, int(self.total_page)):
+        for page in range(1, int(self.total_page)+1):
+
             time.sleep(2)
             form_data = {
                 'pn': str(page),
-                'kd': job
+                'kd': self.job
             }
             while True:
                 source = self.get_one_page(url=url, data=form_data, headers=headers)
@@ -151,6 +151,7 @@ class LaGou(object):
                     continue
                 else:
                     datas = self.parse_one_page(source)
+
                     if datas is not None:
                         for data in datas:
                             content.append(data)
@@ -164,35 +165,39 @@ class LaGou(object):
 class UiForm(QWidget):
     def __init__(self):
         super().__init__()
+        self.init_ui()
+
+    def init_ui(self):
+        print('界面初始化')
         self.setWindowTitle('职位抓取工具')
         self.resize(200, 100)
         lay = QFormLayout()
         self.setLayout(lay)
 
-        Lab1 = QLabel('招聘网站')
+        # Lab0 = QLabel('程序状态:')
+        # self.label = QLabel()
+        # self.label.setText('准备抓取数据')
+
+        Lab1 = QLabel('招聘网站:')
         self.web = QLineEdit()
 
-        Lab2 = QLabel('城市')
+        Lab2 = QLabel('城市:')
         self.city = QLineEdit()
 
-        Lab3 = QLabel('职位')
+        Lab3 = QLabel('职位:')
         self.job = QLineEdit()
 
-        Lab4 = QLabel('页数')
+        Lab4 = QLabel('页数:')
         self.page = QLineEdit()
 
         OkB = QPushButton('确定')
         CaB = QPushButton('退出')
 
-        Lab0 = QLabel('程序状态')
-        self.label = QLabel(self)
-        self.label.setText('准备抓取数据')
-
         # 点击事件
         OkB.clicked.connect(self.buttonok)
         CaB.clicked.connect(QCoreApplication.instance().quit)
 
-        lay.addRow(Lab0, self.label)
+        # lay.addRow(Lab0, self.label)
         lay.addRow(Lab1, self.web)
         lay.addRow(Lab2, self.city)
         lay.addRow(Lab3, self.job)
@@ -205,30 +210,38 @@ class UiForm(QWidget):
         job = self.job.text()
         page = self.page.text()
         if '智联' in web:
+            print('***{}***{}***{}***{}***'.format(web, city, job, page))
             work = ZhiLian(city=city, job=job, total_page=page)
             datas = work.get_all_job()
             keys = ['职位', '反馈率', '公司', '薪资', '地点']
             w_excel(web=web, city=city, job=job, keys=keys, datas=datas)
         elif '拉钩' in web:
-            print(web)
+            print('***{}***{}***{}***{}***'.format(web, city, job, page))
             work = LaGou(city=city, job=job, total_page=page)
             datas = work.get_all_job()
-
             keys = ['职位', '城市', '地区', '公司', '薪资', '经验']
             w_excel(web=web, city=city, job=job, keys=keys, datas=datas)
-        self.label.setText('数据抓取完成')
+        # self.label.setText('数据抓取完成')
+        QMessageBox.information(self, "提示信息", "数据抓取完成")
+        # self.label.setText("数据准备抓取")
 
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    job = UiForm()
-    job.show()
+    ui = UiForm()
+    ui.show()
     sys.exit(app.exec_())
-    # city = '成都'
+    # city = '上海'
     # job = 'python'
-    # page = '30'
-    # web = '智联'
+    # page = '10'
+    # web = '拉钩'
     # work = ZhiLian(city=city, job=job, total_page=page)
     # datas = work.get_all_job()
     # keys = ['职位', '反馈率', '公司', '薪资', '地点']
+    # w_excel(web=web, city=city, job=job, keys=keys, datas=datas)
+
+    # work = LaGou(city=city, job=job, total_page=page)
+    # datas = work.get_all_job()
+    #
+    # keys = ['职位', '城市', '地区', '公司', '薪资', '经验']
     # w_excel(web=web, city=city, job=job, keys=keys, datas=datas)
